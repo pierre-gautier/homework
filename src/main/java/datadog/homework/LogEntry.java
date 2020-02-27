@@ -17,7 +17,7 @@ public class LogEntry {
   public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MMM/yyyy:HH:mm:ss Z");
   
   public static final String REGEX = "^(?<remotehost>\\S*?) (?<rfc931>\\S*?) (?<authuser>\\S*?)"
-      + " \\[(?<date>.*?)\\] \\\"(?<request>.*?)\\\" (?<status>\\d*?) (?<size>\\d*?)$";
+      + " \\[(?<date>.*?)\\] \\\"(?<method>\\S*?) (?<section>\\/[^\\/\\s]*)(?<request>\\S*?) (?<protocol>HTTP\\/[0-9.]+)\\\" (?<status>\\d*?) (?<size>\\d*?)( .*$|$)";
   
   public static final Pattern PATTERN = Pattern.compile(LogEntry.REGEX);
   
@@ -34,7 +34,7 @@ public class LogEntry {
       try {
         return new LogEntry(matcher.group("remotehost"), matcher.group("rfc931"), matcher.group("authuser"),
             ZonedDateTime.parse(matcher.group("date"), LogEntry.FORMATTER),
-            matcher.group("request"),
+            matcher.group("method"), matcher.group("section"), matcher.group("request"), matcher.group("protocol"),
             Integer.parseInt(matcher.group("status")), Integer.parseInt(matcher.group("size")));
       } catch (final Exception e) {
         System.err.println(e.getMessage() + ": " + input);
@@ -49,76 +49,89 @@ public class LogEntry {
   private final String rfc931;
   private final String authuser;
   private final ZonedDateTime date;
+  private final String method;
+  private final String section;
   private final String request;
+  private final String protocol;
   private final int status;
   private final int size;
   
   public LogEntry(final String remotehost, final String rfc931, final String authuser, final ZonedDateTime date,
-      final String request, final int status, final int size) {
+      final String method, final String section, final String request, final String protocol, final int status,
+      final int size) {
     super();
     this.remotehost = remotehost;
     this.rfc931 = rfc931;
     this.authuser = authuser;
     this.date = date;
+    this.method = method;
+    this.section = section;
     this.request = request;
+    this.protocol = protocol;
     this.status = status;
     this.size = size;
   }
   
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) {
+    if (this == obj)
       return true;
-    }
-    if (obj == null) {
+    if (obj == null)
       return false;
-    }
-    if (this.getClass() != obj.getClass()) {
+    if (this.getClass() != obj.getClass())
       return false;
-    }
     final LogEntry other = (LogEntry) obj;
     if (this.authuser == null) {
-      if (other.authuser != null) {
+      if (other.authuser != null)
         return false;
-      }
-    } else if (!this.authuser.equals(other.authuser)) {
+    } else if (!this.authuser.equals(other.authuser))
       return false;
-    }
-    if (this.size != other.size) {
-      return false;
-    }
     if (this.date == null) {
-      if (other.date != null) {
+      if (other.date != null)
         return false;
-      }
-    } else if (!this.date.equals(other.date)) {
+    } else if (!this.date.equals(other.date))
       return false;
-    }
-    if (this.remotehost == null) {
-      if (other.remotehost != null) {
-        return false;
-      }
-    } else if (!this.remotehost.equals(other.remotehost)) {
-      return false;
-    }
-    if (this.request == null) {
-      if (other.request != null) {
-        return false;
-      }
-    } else if (!this.request.equals(other.request)) {
-      return false;
-    }
-    if (this.rfc931 == null) {
-      if (other.rfc931 != null) {
-        return false;
-      }
-    } else if (!this.rfc931.equals(other.rfc931)) {
-      return false;
-    }
-    if (this.status != other.status) {
-      return false;
-    }
     return true;
+  }
+  
+  public String getAuthuser() {
+    return this.authuser;
+  }
+  
+  public ZonedDateTime getDate() {
+    return this.date;
+  }
+  
+  public String getMethod() {
+    return this.method;
+  }
+  
+  public String getProtocol() {
+    return this.protocol;
+  }
+  
+  public String getRemotehost() {
+    return this.remotehost;
+  }
+  
+  public String getSection() {
+    return this.section;
+  }
+  
+  public String getRequest() {
+    return this.request;
+  }
+  
+  public String getRfc931() {
+    return this.rfc931;
+  }
+  
+  public int getSize() {
+    return this.size;
+  }
+  
+  public int getStatus() {
+    return this.status;
   }
   
   @Override
@@ -126,12 +139,7 @@ public class LogEntry {
     final int prime = 31;
     int result = 1;
     result = prime * result + (this.authuser == null ? 0 : this.authuser.hashCode());
-    result = prime * result + this.size;
     result = prime * result + (this.date == null ? 0 : this.date.hashCode());
-    result = prime * result + (this.remotehost == null ? 0 : this.remotehost.hashCode());
-    result = prime * result + (this.request == null ? 0 : this.request.hashCode());
-    result = prime * result + (this.rfc931 == null ? 0 : this.rfc931.hashCode());
-    result = prime * result + this.status;
     return result;
   }
   
@@ -140,10 +148,11 @@ public class LogEntry {
    */
   @Override
   public String toString() {
-    return String.format("%s %s %s [%s] \"%s\" %d %d",
+    return String.format("%s %s %s [%s] \"%s %s%s %s\" %d %d",
         this.remotehost, this.rfc931, this.authuser,
         this.date.format(LogEntry.FORMATTER),
-        this.request, this.status, this.size);
+        this.method, this.section, this.request, this.protocol,
+        this.status, this.size);
   }
   
 }
