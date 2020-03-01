@@ -19,6 +19,7 @@ public class CLI {
   private static final String DEFAULT_TOP = "3";
   public static final String DEFAULT_THRESHOLD = "10";
   public static final String DEFAULT_WINDOW = "120";
+  public static final String DEFAULT_SIZE = "10000";
   
   public static void main(final String[] args) {
     final CommandLine cmd = CLI.parseArgs(args);
@@ -30,9 +31,10 @@ public class CLI {
     final int top = Integer.parseInt(cmd.getOptionValue("p", CLI.DEFAULT_TOP));
     final int threshold = Integer.parseInt(cmd.getOptionValue("t", CLI.DEFAULT_THRESHOLD));
     final int window = Integer.parseInt(cmd.getOptionValue("w", CLI.DEFAULT_WINDOW));
+    final int size = Integer.parseInt(cmd.getOptionValue("s", CLI.DEFAULT_SIZE));
     final boolean generator = cmd.hasOption("g");
     // start engine with parameters
-    new Engine(new File(filePath), display, top, threshold, window, generator).start();
+    new Engine(new File(filePath), display, top, threshold, window, size, generator).start();
   }
   
   public static CommandLine parseArgs(final String[] args) {
@@ -44,13 +46,17 @@ public class CLI {
         .desc("time in seconds between displays")
         .hasArg(true).optionalArg(true).build());
     options.addOption(Option.builder("p").longOpt("top")
-        .desc("size of top sections displayed")
+        .desc("number of top sections displayed")
         .hasArg(true).optionalArg(true).build());
     options.addOption(Option.builder("t").longOpt("threshold")
         .desc("requests per second alert threshold")
         .hasArg(true).optionalArg(true).build());
     options.addOption(Option.builder("w").longOpt("window")
         .desc("consecutive time in seconds of threshold exceeding before alerting")
+        .hasArg(true).optionalArg(true).build());
+    options.addOption(Option.builder("s").longOpt("segment size")
+        .desc("the size of log entry segments, for best performance "
+            + "this size should be larger than the number of requests between 2 displays")
         .hasArg(true).optionalArg(true).build());
     options.addOption(Option.builder("g").longOpt("generator")
         .desc("start engine in generator mode")
