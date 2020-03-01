@@ -14,6 +14,14 @@ import datadog.homework.worker.Cleaner;
 import datadog.homework.worker.Displayer;
 import datadog.homework.worker.Generator;
 
+/**
+ * The monitoring engine.
+ * <p/>
+ * It listens to the file using a {@link Tailer} and parses and appends a LogEntry when notified.<br/>
+ * LogEntries are regrouped in LogSegment to ease cleaning of outdated entries.<br/>
+ * This segmentation allows an efficient use of {@link CopyOnWriteArrayList}.<br/>
+ * The engine schedules various {@link Runnable} using a {@link ScheduledThreadPoolExecutor}.<br/>
+ */
 public class Engine extends TailerListenerAdapter {
   
   private final File file;
@@ -61,7 +69,8 @@ public class Engine extends TailerListenerAdapter {
       this.executor.scheduleAtFixedRate(new Cleaner(this.segments, timeBeforeRemoval),
           1, 1, TimeUnit.SECONDS);
     } else {
-      this.executor.scheduleWithFixedDelay(new Generator(this.file), 1, 1, TimeUnit.SECONDS);
+      this.executor.scheduleWithFixedDelay(new Generator(this.file, this.threshold),
+          1, 1, TimeUnit.SECONDS);
     }
   }
   

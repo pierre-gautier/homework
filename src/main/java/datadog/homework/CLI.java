@@ -16,10 +16,10 @@ public class CLI {
   
   public static final String DEFAULT_FILE_PATH = "/tmp/access.log";
   public static final String DEFAULT_DISPLAY = "10";
-  private static final String DEFAULT_TOP = "3";
+  public static final String DEFAULT_TOP = "3";
   public static final String DEFAULT_THRESHOLD = "10";
   public static final String DEFAULT_WINDOW = "120";
-  public static final String DEFAULT_SIZE = "10000";
+  public static final String DEFAULT_SIZE = "1000";
   
   public static void main(final String[] args) {
     final CommandLine cmd = CLI.parseArgs(args);
@@ -39,8 +39,11 @@ public class CLI {
   
   public static CommandLine parseArgs(final String[] args) {
     final Options options = new Options();
+    options.addOption(Option.builder("h").longOpt("help")
+        .desc("display this message")
+        .hasArg(false).optionalArg(true).build());
     options.addOption(Option.builder("f").longOpt("file")
-        .desc("the log file path")
+        .desc("the log file path, used in both monitor and generator modes")
         .hasArg(true).optionalArg(true).build());
     options.addOption(Option.builder("d").longOpt("display")
         .desc("time in seconds between displays")
@@ -55,14 +58,18 @@ public class CLI {
         .desc("consecutive time in seconds of threshold exceeding before alerting")
         .hasArg(true).optionalArg(true).build());
     options.addOption(Option.builder("s").longOpt("segment size")
-        .desc("the size of log entry segments, for best performance "
-            + "this size should be larger than the number of requests between 2 displays")
+        .desc("the size of log entry segments, it has an impact on performance")
         .hasArg(true).optionalArg(true).build());
     options.addOption(Option.builder("g").longOpt("generator")
         .desc("start engine in generator mode")
         .hasArg(false).optionalArg(true).build());
     try {
-      return new DefaultParser().parse(options, args);
+      final CommandLine cmd = new DefaultParser().parse(options, args);
+      if (cmd.hasOption("h")) {
+        new HelpFormatter().printHelp("homework", options);
+        return null;
+      }
+      return cmd;
     } catch (final ParseException e) {
       System.err.println(e.getMessage());
       new HelpFormatter().printHelp("homework", options);

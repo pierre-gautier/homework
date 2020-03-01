@@ -9,6 +9,9 @@ import java.util.List;
 
 import datadog.homework.LogSegment;
 
+/**
+ * Remove outdated LogSegments from the main collection to avoid to get OOM.
+ */
 public class Cleaner implements Runnable {
   
   private final List<LogSegment> segments;

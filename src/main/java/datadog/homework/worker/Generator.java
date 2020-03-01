@@ -10,12 +10,17 @@ import java.util.Random;
 
 import datadog.homework.LogEntry;
 
+/**
+ * Generate and append random log lines to the monitored file
+ */
 public class Generator implements Runnable {
   
   private final File file;
+  private final int number;
   
-  public Generator(final File file) {
+  public Generator(final File file, final int number) {
     this.file = file;
+    this.number = number;
   }
   
   private static final String[] USERS = { "admin", "foo", "127.0.0.1", "", "-" };
@@ -28,7 +33,9 @@ public class Generator implements Runnable {
   public void run() {
     final long t = System.currentTimeMillis();
     final StringBuilder builder = new StringBuilder();
-    for (int i = 0; i < 10_000; i++) {
+    final int size = this.random(this.number);
+    System.out.println("generating " + size + " lines");
+    for (int i = 0; i < size; i++) {
       builder.append(this.random(USERS)).append(" ");
       builder.append(this.random(USERS)).append(" ");
       builder.append(this.random(USERS)).append(" ");
@@ -38,17 +45,28 @@ public class Generator implements Runnable {
       builder.append(this.random(STATUS)).append(" ").append(this.random(50000));
       builder.append(System.lineSeparator());
     }
+    
+    // some kind of hardcore rotation ^^
+    if (this.file.length() > 100 * 1024 * 1024) {
+      try (BufferedWriter writer = Files.newBufferedWriter(this.file.toPath(),
+          StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+        System.out.println("rotated logs");
+      } catch (final IOException ioe) {
+        ioe.printStackTrace();
+      }
+    }
+    
     try (BufferedWriter writer = Files.newBufferedWriter(this.file.toPath(),
         StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
       writer.write(builder.toString());
     } catch (final IOException ioe) {
-      System.err.format("IOException: %s%n", ioe);
+      ioe.printStackTrace();
     }
     final long spent = System.currentTimeMillis() - t;
     if (spent > 800)
       System.err.println("generation took " + spent + " ms");
   }
-
+  
   private int random(final int max) {
     return new Random().nextInt(max);
   }

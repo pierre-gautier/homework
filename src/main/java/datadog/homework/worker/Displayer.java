@@ -10,13 +10,21 @@ import org.apache.commons.io.FileUtils;
 import datadog.homework.LogEntry;
 import datadog.homework.LogSegment;
 
+/**
+ * Display stats.
+ * <p/>
+ * Display stats every delay seconds about the traffic: the sections of the web site with the most hits,
+ * as well as interesting summary statistics on the traffic as a whole.
+ */
 public class Displayer implements Runnable {
+  
+  private static final String STATS = "Traffic during last %d seconds: %d access of which %d errors for %s, top sections: ";
   
   private final List<LogSegment> segments;
   private final int delay;
   private final int topSize;
   
-  private LogEntry last = null;
+  private LogEntry last;
   
   public Displayer(final List<LogSegment> segments, final int delay, final int topSize) {
     this.segments = segments;
@@ -39,39 +47,36 @@ public class Displayer implements Runnable {
     loop:
     while (iterator.hasPrevious()) {
       final LogSegment segment = iterator.previous();
-      for (int l = segment.getLast(); l > 0; l--) {
+      for (int l = segment.getLast(); l >= 0; l--) {
         final LogEntry entry = segment.get(l);
         if (lastEntry == null) {
           lastEntry = entry;
         }
+        // stop when we reach the last entry seen during the last run
         if (entry == this.last) {
           break loop;
         }
+        // several simple counters
         totalAccess++;
         totalTransfered += entry.getSize();
-        if (entry.getStatus() >= 300) {
+        if (entry.getStatus() >= 400) {
           totalError++;
         }
-        final String section = entry.getSection();
-        final Integer counter = sectionCounter.get(section);
-        if (counter == null) {
-          sectionCounter.put(section, 1);
-        } else {
-          sectionCounter.put(section, counter + 1);
-        }
+        // counter by section
+        sectionCounter.merge(entry.getSection(), 1, Integer::sum);
       }
     }
     
-    // save last log entry seen
+    // save last log entry seen for the next run
     this.last = lastEntry;
     
     if (totalAccess > 0) {
-      System.out.println("---------------------------- since last " + this.delay + " seconds ");
-      System.out.println(totalAccess + " access, of wich " + totalError + " errors, for "
-          + FileUtils.byteCountToDisplaySize(totalTransfered));
-      System.out.println("top sections ");
+      final StringBuilder out = new StringBuilder();
+      out.append(String.format(STATS, this.delay, totalAccess, totalError,
+          FileUtils.byteCountToDisplaySize(totalTransfered)));
       sectionCounter.entrySet().stream().sorted((e1, e2) -> e2.getValue() - e1.getValue())
-          .limit(this.topSize).forEach(e -> System.out.println(" " + e.getKey() + " " + e.getValue()));
+          .limit(this.topSize).forEach(e -> out.append(String.format(" %s %d hits", e.getKey(), e.getValue())));
+      System.out.println(out);
     }
   }
 }

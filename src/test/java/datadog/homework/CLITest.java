@@ -6,10 +6,11 @@ import org.junit.Test;
 
 public class CLITest {
   
+  @Test
   public void failParse() {
     Assert.assertNull(CLI.parseArgs(new String[] { "f", "b", "foo", "", "200", "-bar", "--foobar", }));
   }
-
+  
   @Test
   public void sucessParse() {
     Assert.assertNotNull(CLI.parseArgs(null));
